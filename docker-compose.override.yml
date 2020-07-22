@@ -1,0 +1,34 @@
+version: '3.1'
+
+services:
+  prometheus:
+    image: prom/prometheus
+    volumes:
+      - ./prometheus.yml:/prometheus.yml
+    command:
+      - '--config.file=/prometheus.yml'
+    ports:
+      - 9090:9090
+    restart: always
+
+  ccloud_exporter:
+    build: ./
+    environment:
+      CCLOUD_USER: ${CCLOUD_USER}
+      CCLOUD_PASSWORD: ${CCLOUD_PASSWORD}
+    command: -cluster ${CCLOUD_CLUSTER}
+
+  grafana:
+    image: grafana/grafana
+    restart: always
+    container_name: grafana
+    depends_on: 
+      - prometheus
+    ports:
+      - 3000:3000
+    volumes:
+      - ./grafana/datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml:rw
+      - ./grafana/dashboard.yml:/etc/grafana/provisioning/dashboards/dashboard.yml:rw
+      - ./grafana/ccloud-exporter.json:/etc/grafana/provisioning/dashboards/ccloudexporter.json:rw
+    env_file:
+      - ./grafana/config.monitoring
